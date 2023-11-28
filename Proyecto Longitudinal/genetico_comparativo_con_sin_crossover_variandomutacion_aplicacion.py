@@ -37,18 +37,27 @@ def funcion_aptitud(poblacion, candidatos, calificaciones):
 
 
 def asignar_puestos(mejor_solucion, candidatos, calificaciones):
-    num_candidatos, num_puestos = mejor_solucion.shape
-
+    if len(mejor_solucion.shape) == 1:
+        num_candidatos, num_puestos = len(mejor_solucion), len(mejor_solucion)
+    else:
+        num_candidatos, num_puestos = mejor_solucion.shape
+    
     asignaciones = np.zeros(num_puestos, dtype=int)
 
     for i in range(num_puestos):
-        opciones_disponibles = [c for c in range(num_candidatos) if mejor_solucion[c, i] == 0]
+        if len(mejor_solucion.shape) == 1:
+            opciones_disponibles = [c for c in range(num_candidatos) if mejor_solucion[c] == 0]
+        else:
+            opciones_disponibles = [c for c in range(num_candidatos) if mejor_solucion[c, i] == 0]
 
         if opciones_disponibles:
             opciones_ordenadas = sorted(opciones_disponibles, key=lambda x: calificaciones[x, i], reverse=True)
             puesto_asignado = opciones_ordenadas[0]
             asignaciones[i] = puesto_asignado
-            mejor_solucion[puesto_asignado, i] = 1  # Marcar el puesto como asignado para el candidato
+            if len(mejor_solucion.shape) == 1:
+                mejor_solucion[puesto_asignado] = 1
+            else:
+                mejor_solucion[puesto_asignado, i] = 1  # Marcar el puesto como asignado para el candidato
 
     return asignaciones
 
@@ -57,6 +66,8 @@ def algoritmo_genetico(tam_poblacion, num_puestos, candidatos, calificaciones, g
     mejores_valores = []
     valores_promedio = []
     valores_minimos = []
+    
+    mejor_solucion = None  # Agregamos esta línea para asegurarnos de que 'mejor_solucion' esté definido
 
     for generacion in range(1, generaciones + 1):
         valores_aptitud = funcion_aptitud(poblacion, candidatos, calificaciones)
@@ -76,12 +87,14 @@ def algoritmo_genetico(tam_poblacion, num_puestos, candidatos, calificaciones, g
         hijos_mutados = mutar(np.array(hijos), probabilidad_mutacion_actual)
         poblacion[:len(hijos_mutados)] = hijos_mutados
 
-    # Seleccionar el mejor individuo al final de las generaciones
-    mejor_individuo = poblacion[np.argmax(valores_aptitud)]
-    mejor_solucion = poblacion[np.argmax(valores_aptitud)].reshape(1, num_puestos)
+        mejor_solucion = poblacion[np.argmax(valores_aptitud)]
+
     asignaciones = asignar_puestos(mejor_solucion, candidatos, calificaciones)
 
     return mejores_valores, valores_promedio, valores_minimos, asignaciones
+
+    print(f"Generación {generacion}: Mejor valor {mejores_valores[-1]}, Asignaciones {asignaciones}")
+
 
 # Configuración de prueba
 tam_poblacion = 2500  # Ajustar el tamaño de la población
@@ -104,7 +117,6 @@ print("Valores promedio:", valores_promedio)
 print("Valores mínimos:", valores_minimos)
 print("Asignaciones:", asignaciones)
 
-
 # Visualizar resultados gráficamente
 generaciones_range = range(1, generaciones + 1)
 
@@ -126,6 +138,8 @@ plt.xlabel('Puesto')
 plt.ylabel('Candidato asignado')
 
 plt.tight_layout()
+plt.show()
+
 plt.show()
 
 
